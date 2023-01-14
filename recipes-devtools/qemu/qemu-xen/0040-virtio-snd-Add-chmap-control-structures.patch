@@ -1,0 +1,82 @@
+From 9e4edf6bea5655f79532cb3a984f0bef840043a2 Mon Sep 17 00:00:00 2001
+From: Vladyslav Goncharuk <vladyslav_goncharuk@epam.com>
+Date: Tue, 20 Dec 2022 15:14:24 +0200
+Subject: [PATCH 40/62] virtio-snd: Add chmap control structures
+
+Added structures for handling channel map control
+requests to the header file.
+
+Signed-off-by: Shreyansh Chouhan <chouhan.shreyansh2702@gmail.com>
+---
+ include/hw/virtio/virtio-snd.h | 57 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
+
+diff --git a/include/hw/virtio/virtio-snd.h b/include/hw/virtio/virtio-snd.h
+index a7828c4ab8..3c16609a25 100644
+--- a/include/hw/virtio/virtio-snd.h
++++ b/include/hw/virtio/virtio-snd.h
+@@ -257,4 +257,61 @@ typedef struct virtio_snd_pcm_status {
+     uint32_t latency_bytes;
+ } virtio_snd_pcm_status;
+ 
++/* CHANNEL MAP CONTROL MESSAGES */
++
++/* standard channel position definition */
++enum {
++    VIRTIO_SND_CHMAP_NONE = 0,  /* undefined */
++    VIRTIO_SND_CHMAP_NA,        /* silent */
++    VIRTIO_SND_CHMAP_MONO,      /* mono stream */
++    VIRTIO_SND_CHMAP_FL,        /* front left */
++    VIRTIO_SND_CHMAP_FR,        /* front right */
++    VIRTIO_SND_CHMAP_RL,        /* rear left */
++    VIRTIO_SND_CHMAP_RR,        /* rear right */
++    VIRTIO_SND_CHMAP_FC,        /* front center */
++    VIRTIO_SND_CHMAP_LFE,       /* low frequency (LFE) */
++    VIRTIO_SND_CHMAP_SL,        /* side left */
++    VIRTIO_SND_CHMAP_SR,        /* side right */
++    VIRTIO_SND_CHMAP_RC,        /* rear center */
++    VIRTIO_SND_CHMAP_FLC,       /* front left center */
++    VIRTIO_SND_CHMAP_FRC,       /* front right center */
++    VIRTIO_SND_CHMAP_RLC,       /* rear left center */
++    VIRTIO_SND_CHMAP_RRC,       /* rear right center */
++    VIRTIO_SND_CHMAP_FLW,       /* front left wide */
++    VIRTIO_SND_CHMAP_FRW,       /* front right wide */
++    VIRTIO_SND_CHMAP_FLH,       /* front left high */
++    VIRTIO_SND_CHMAP_FCH,       /* front center high */
++    VIRTIO_SND_CHMAP_FRH,       /* front right high */
++    VIRTIO_SND_CHMAP_TC,        /* top center */
++    VIRTIO_SND_CHMAP_TFL,       /* top front left */
++    VIRTIO_SND_CHMAP_TFR,       /* top front right */
++    VIRTIO_SND_CHMAP_TFC,       /* top front center */
++    VIRTIO_SND_CHMAP_TRL,       /* top rear left */
++    VIRTIO_SND_CHMAP_TRR,       /* top rear right */
++    VIRTIO_SND_CHMAP_TRC,       /* top rear center */
++    VIRTIO_SND_CHMAP_TFLC,      /* top front left center */
++    VIRTIO_SND_CHMAP_TFRC,      /* top front right center */
++    VIRTIO_SND_CHMAP_TSL,       /* top side left */
++    VIRTIO_SND_CHMAP_TSR,       /* top side right */
++    VIRTIO_SND_CHMAP_LLFE,      /* left LFE */
++    VIRTIO_SND_CHMAP_RLFE,      /* right LFE */
++    VIRTIO_SND_CHMAP_BC,        /* bottom center */
++    VIRTIO_SND_CHMAP_BLC,       /* bottom left center */
++    VIRTIO_SND_CHMAP_BRC        /* bottom right center */
++};
++
++/* maximum possible number of channels */
++#define VIRTIO_SND_CHMAP_MAX_SIZE   18
++
++typedef struct virtio_snd_chmap_info {
++    /* common header */
++    virtio_snd_info hdr;
++    /* direction */
++    uint8_t direction;
++    /* # of valid channel position values */
++    uint8_t channels;
++    /* channel position values (VIRTIO_SND_CHMAP_*) */
++    uint8_t positions[VIRTIO_SND_CHMAP_MAX_SIZE];
++} virtio_snd_chmap_info;
++
+ #endif
+-- 
+2.34.1
+

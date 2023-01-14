@@ -1,0 +1,107 @@
+From ea0245696344dc9f6663ebc78aa9a6f535580db6 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 3 Oct 2022 20:15:55 +0300
+Subject: [PATCH 34/62] [WIP] Experiment with XEN_DMOP_set_pci_intx_level
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/arm/xen_arm.c   | 10 +++++++---
+ hw/pci-host/gpex.c | 16 +++++++++++-----
+ hw/pci/pci.c       | 11 +++++++----
+ 3 files changed, 25 insertions(+), 12 deletions(-)
+
+diff --git a/hw/arm/xen_arm.c b/hw/arm/xen_arm.c
+index a193f74e4c..48fa80cc51 100644
+--- a/hw/arm/xen_arm.c
++++ b/hw/arm/xen_arm.c
+@@ -92,6 +92,11 @@ static void xen_set_irq(void *opaque, int irq, int level)
+     xendevicemodel_set_irq_level(xen_dmod, xen_domid, irq, level);
+ }
+ 
++static void xen_set_pci_irq(void *opaque, int irq, int level)
++{
++    xendevicemodel_set_pci_intx_level(xen_dmod, xen_domid, 0, 0, 0, irq, level);
++}
++
+ static void xen_create_virtio_mmio_devices(XenArmState *xam)
+ {
+     hwaddr size = xam->memmap[VIRTIO_MMIO_IDX].size;
+@@ -183,11 +188,10 @@ static void xen_create_pcie(XenArmState *xam)
+ 
+     /* Legacy PCI interrupts (#INTA - #INTD) */
+     for (i = 0; i < GPEX_NUM_IRQS; i++) {
+-        qemu_irq irq = qemu_allocate_irq(xen_set_irq, NULL,
+-                                         xam->irqmap[VIRT_PCIE] + i);
++        qemu_irq irq = qemu_allocate_irq(xen_set_pci_irq, NULL, i);
+ 
+         sysbus_connect_irq(SYS_BUS_DEVICE(dev), i, irq);
+-        gpex_set_irq_num(GPEX_HOST(dev), i, xam->irqmap[VIRT_PCIE] + i);
++        gpex_set_irq_num(GPEX_HOST(dev), i, i);
+     }
+ 
+     DPRINTF("Created PCIe host bridge\n");
+diff --git a/hw/pci-host/gpex.c b/hw/pci-host/gpex.c
+index a6752fac5e..bd6d283c20 100644
+--- a/hw/pci-host/gpex.c
++++ b/hw/pci-host/gpex.c
+@@ -37,15 +37,21 @@
+ #include "migration/vmstate.h"
+ #include "qemu/module.h"
+ 
++#include "hw/xen/xen_common.h"
++
+ /****************************************************************************
+  * GPEX host
+  */
++static int xen_pci_slot_get_pirq1(PCIDevice *pci_dev, int irq_num)
++{
++    return irq_num + (PCI_SLOT(pci_dev->devfn) << 2);
++}
+ 
+-static void gpex_set_irq(void *opaque, int irq_num, int level)
++static void xen_piix3_set_irq1(void *opaque, int irq_num, int level)
+ {
+-    GPEXHost *s = opaque;
+ 
+-    qemu_set_irq(s->irq[irq_num], level);
++    xen_set_pci_intx_level(xen_domid, 0, 0, irq_num >> 2,
++                           irq_num & 3, level);
+ }
+ 
+ int gpex_set_irq_num(GPEXHost *s, int index, int gsi)
+@@ -133,8 +139,8 @@ static void gpex_host_realize(DeviceState *dev, Error **errp)
+         s->irq_num[i] = -1;
+     }
+ 
+-    pci->bus = pci_register_root_bus(dev, "pcie.0", gpex_set_irq,
+-                                     pci_swizzle_map_irq_fn, s, &s->io_mmio,
++    pci->bus = pci_register_root_bus(dev, "pcie.0", xen_piix3_set_irq1,
++                                     xen_pci_slot_get_pirq1, s, &s->io_mmio,
+                                      &s->io_ioport, 0, 4, TYPE_PCIE_BUS);
+ 
+     pci_bus_set_route_irq_fn(pci->bus, gpex_route_intx_pin_to_irq);
+diff --git a/hw/pci/pci.c b/hw/pci/pci.c
+index dae9119bfe..412e69ddb1 100644
+--- a/hw/pci/pci.c
++++ b/hw/pci/pci.c
+@@ -262,10 +262,13 @@ static inline void pci_set_irq_state(PCIDevice *d, int irq_num, int level)
+ 
+ static void pci_bus_change_irq_level(PCIBus *bus, int irq_num, int change)
+ {
+-    assert(irq_num >= 0);
+-    assert(irq_num < bus->nirq);
+-    bus->irq_count[irq_num] += change;
+-    bus->set_irq(bus->irq_opaque, irq_num, bus->irq_count[irq_num] != 0);
++    /*#define hvm_pci_intx_link(dev, intx) (((dev) + (intx)) & 3)*/
++    int i = ((irq_num >> 2) + (irq_num & 3)) & 3;
++
++    assert(i >= 0);
++    assert(i < bus->nirq);
++    bus->irq_count[i] += change;
++    bus->set_irq(bus->irq_opaque, irq_num, change <= 0 ? 0 : 1);
+ }
+ 
+ static void pci_change_irq_level(PCIDevice *pci_dev, int irq_num, int change)
+-- 
+2.34.1
+

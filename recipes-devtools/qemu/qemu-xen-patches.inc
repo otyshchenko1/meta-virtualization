@@ -13,4 +13,54 @@ SRC_URI += " \
     file://0010-hw-arm-introduce-xenpv-machine.patch \
     file://0011-build-do-not-set-have_xen_pci_passthrough-for-aarch6.patch \
     file://0012-xen-arm-call-qemu_find_tpm_be-if-CONFIG_TPM.patch \
+    file://0013-xen-block-Do-not-write-frontend-nodes.patch \
+    file://0014-xen-bus-Do-not-destroy-frontend-backend-directories.patch \
+    file://0015-xen_pvdev-Do-not-assume-Dom0-when-changing-directory.patch \
+    file://0016-xen-bus-Set-offline-if-backend-s-state-is-XenbusStat.patch \
+    file://0017-xen_arm-Set-mc-max_cpus-to-GUEST_MAX_VCPUS-in-xen_ar.patch \
+    file://0018-xen_arm-Create-virtio-mmio-devices-during-initializa.patch \
+    file://0019-xen_arm-Initialize-RAM-and-add-hi-low-memory-regions.patch \
+    file://0020-xen_arm-Mandate-xen_enabled-to-be-true-and-drop-extr.patch \
+    file://0021-Revert-accel-xen-xen-all-export-xenstore_record_dm_s.patch \
+    file://0022-WIP-libxl-arm-Add-basic-virtio-pci-support.patch \
+    file://0023-xen-when-unplugging-emulated-devices-skip-virtio-dev.patch \
+    file://0024-rebased-xen-add-pseudo-RAM-region-for-grant-mappings.patch \
+    file://0025-softmmu-let-qemu_map_ram_ptr-use-qemu_ram_ptr_length.patch \
+    file://0026-xen-let-xen_ram_addr_from_mapcache-return-1-in-case-.patch \
+    file://0027-memory-add-MemoryRegion-map-and-unmap-callbacks.patch \
+    file://0028-xen-add-map-and-unmap-callbacks-for-grant-region.patch \
+    file://0029-virtio-advertise-VIRTIO_F_ACCESS_PLATFORM-when-actin.patch \
+    file://0030-xen-mapcache-Fix-build-on-Arm.patch \
+    file://0031-xen_arm-Init-grants-region-as-well.patch \
+    file://0032-Revert-virtio-advertise-VIRTIO_F_ACCESS_PLATFORM-whe.patch \
+    file://0033-TEMP-Increase-XEN_MAX_VIRTIO_GRANTS.patch \
+    file://0034-WIP-Experiment-with-XEN_DMOP_set_pci_intx_level.patch \
+    file://0035-Revert-WIP-Experiment-with-XEN_DMOP_set_pci_intx_lev.patch \
+    file://0036-DEBUG-Print-virtqueue-addresses-for-both-MMIO-and-PC.patch \
+    file://0037-virtio-snd-Add-virtio-sound-header-file.patch \
+    file://0038-virtio-snd-Add-jack-control-structures.patch \
+    file://0039-virtio-snd-Add-PCM-control-structures.patch \
+    file://0040-virtio-snd-Add-chmap-control-structures.patch \
+    file://0041-virtio-snd-Add-device-implementation-structures.patch \
+    file://0042-virtio-snd-Add-PCI-wrapper-code-for-VirtIOSound.patch \
+    file://0043-virtio-snd-Add-properties-for-class-init.patch \
+    file://0044-virtio-snd-Add-code-for-get-config-function.patch \
+    file://0045-virtio-snd-Add-code-for-the-realize-function.patch \
+    file://0046-virtio-snd-Add-macros-for-logging.patch \
+    file://0047-virtio-snd-Add-control-virtqueue-handler.patch \
+    file://0048-virtio-snd-Add-VIRTIO_SND_R_JACK_INFO-handler.patch \
+    file://0049-virtio-snd-Add-stub-for-VIRTIO_SND_R_JACK_REMAP-hand.patch \
+    file://0050-virtio-snd-Add-VIRTIO_SND_R_PCM_INFO-handler.patch \
+    file://0051-virtio-snd-Add-VIRITO_SND_R_PCM_SET_PARAMS-handle.patch \
+    file://0052-virtio-snd-Add-VIRTIO_SND_R_PCM_PREPARE-handler.patch \
+    file://0053-virtio-snd-Add-default-configs-to-realize-fn.patch \
+    file://0054-virtio-snd-Add-callback-for-SWVoiceOut.patch \
+    file://0055-virtio-snd-Add-start-stop-handler.patch \
+    file://0056-virtio-snd-Add-VIRTIO_SND_R_PCM_RELEASE-handler.patch \
+    file://0057-virtio-snd-Replaced-goto-with-if-else.patch \
+    file://0058-virtio-snd-Add-code-to-device-unrealize-function.patch \
+    file://0059-virtio-snd-Add-xfer-handler.patch \
+    file://0060-virtio-snd-Add-event-vq-and-a-handler-stub.patch \
+    file://0061-virtio-snd-Replaced-AUD_log-with-tracepoints.patch \
+    file://0062-virtio-snd-Fix-warnings-treated-as-errors.patch \
 "

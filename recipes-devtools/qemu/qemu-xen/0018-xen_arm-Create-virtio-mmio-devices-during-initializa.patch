@@ -1,0 +1,103 @@
+From 0fe48e8a5965e16bc2a83a3602ddbead129dea29 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Sat, 14 Jan 2023 18:08:05 +0200
+Subject: [PATCH 18/62] xen_arm: Create virtio-mmio devices during
+ initialization
+
+In order to use virtio backends we need to allocate virtio-mmio
+parameters (irq and base) and register corresponding buses.
+
+Use the constants defined in public header arch-arm.h to be
+aligned with the toolstack. So the number of current supported
+virtio-mmio devices is 10.
+
+For the interrupts triggering use already existing on Arm
+device-model hypercall.
+
+The toolstack should then insert the same amount of device nodes
+into guest device-tree.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/arm/xen_arm.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/hw/arm/xen_arm.c b/hw/arm/xen_arm.c
+index ac1fa72816..35fa70b25a 100644
+--- a/hw/arm/xen_arm.c
++++ b/hw/arm/xen_arm.c
+@@ -25,6 +25,7 @@
+ #include "qemu/error-report.h"
+ #include "qapi/qapi-commands-migration.h"
+ #include "hw/boards.h"
++#include "hw/irq.h"
+ #include "hw/sysbus.h"
+ #include "sysemu/block-backend.h"
+ #include "sysemu/tpm_backend.h"
+@@ -53,8 +54,47 @@ struct XenArmState {
+     MachineState parent;
+ 
+     XenIOState *state;
++    const MemMapEntry *memmap;
++    const int *irqmap;
+ };
+ 
++#define VIRTIO_MMIO_DEV_SIZE   0x200
++
++#define VIRTIO_MMIO_IDX   0
++
++#define NR_VIRTIO_MMIO_DEVICES   \
++   (GUEST_VIRTIO_MMIO_SPI_LAST - GUEST_VIRTIO_MMIO_SPI_FIRST)
++
++static const MemMapEntry xen_memmap[] = {
++    [VIRTIO_MMIO_IDX] = { GUEST_VIRTIO_MMIO_BASE, VIRTIO_MMIO_DEV_SIZE },
++};
++
++static const int xen_irqmap[] = {
++    [VIRTIO_MMIO_IDX] = GUEST_VIRTIO_MMIO_SPI_FIRST, /* ...to GUEST_VIRTIO_MMIO_SPI_LAST - 1 */
++};
++
++static void xen_set_irq(void *opaque, int irq, int level)
++{
++    xendevicemodel_set_irq_level(xen_dmod, xen_domid, irq, level);
++}
++
++static void xen_create_virtio_mmio_devices(XenArmState *xam)
++{
++    hwaddr size = xam->memmap[VIRTIO_MMIO_IDX].size;
++    int i;
++
++    for (i = 0; i < NR_VIRTIO_MMIO_DEVICES; i++) {
++        hwaddr base = xam->memmap[VIRTIO_MMIO_IDX].base + i * size;
++        qemu_irq irq = qemu_allocate_irq(xen_set_irq, NULL,
++                                         xam->irqmap[VIRTIO_MMIO_IDX] + i);
++
++        sysbus_create_simple("virtio-mmio", base, irq);
++
++        DPRINTF("Created virtio-mmio device %d: irq %d base 0x%lx\n",
++                i, xam->irqmap[VIRTIO_MMIO_IDX] + i, base);
++    }
++}
++
+ void arch_handle_ioreq(XenIOState *state, ioreq_t *req)
+ {
+     hw_error("Invalid ioreq type 0x%x\n", req->type);
+@@ -127,11 +167,15 @@ static void xen_arm_init(MachineState *machine)
+     XenArmState *xam = XEN_ARM(machine);
+ 
+     xam->state =  g_new0(XenIOState, 1);
++    xam->memmap = xen_memmap;
++    xam->irqmap = xen_irqmap;
+ 
+     if (xen_init_ioreq(xam->state, machine->smp.cpus)) {
+         return;
+     }
+ 
++    xen_create_virtio_mmio_devices(xam);
++
+     xen_enable_tpm();
+ 
+     return;
+-- 
+2.34.1
+

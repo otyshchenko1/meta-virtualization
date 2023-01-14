@@ -1,0 +1,48 @@
+From 50c2177c07d23316ce94b6e9a69c3a6c0e006b6c Mon Sep 17 00:00:00 2001
+From: Juergen Gross <jgross@suse.com>
+Date: Thu, 20 May 2021 13:31:32 +0200
+Subject: [PATCH 26/62] xen: let xen_ram_addr_from_mapcache() return -1 in case
+ of not found entry
+
+Today xen_ram_addr_from_mapcache() will either abort() or return 0 in
+case it can't find a matching entry for a pointer value. Both cases
+are bad, so change that to return an invalid address instead.
+
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ hw/xen/xen-mapcache.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
+
+diff --git a/hw/xen/xen-mapcache.c b/hw/xen/xen-mapcache.c
+index 1d896026d6..2ab20726be 100644
+--- a/hw/xen/xen-mapcache.c
++++ b/hw/xen/xen-mapcache.c
+@@ -402,13 +402,8 @@ ram_addr_t xen_ram_addr_from_mapcache(void *ptr)
+         }
+     }
+     if (!found) {
+-        fprintf(stderr, "%s, could not find %p\n", __func__, ptr);
+-        QTAILQ_FOREACH(reventry, &mapcache->locked_entries, next) {
+-            DPRINTF("   "TARGET_FMT_plx" -> %p is present\n", reventry->paddr_index,
+-                    reventry->vaddr_req);
+-        }
+-        abort();
+-        return 0;
++        mapcache_unlock();
++        return ~0ULL;
+     }
+ 
+     entry = &mapcache->entry[paddr_index % mapcache->nr_buckets];
+@@ -416,8 +411,7 @@ ram_addr_t xen_ram_addr_from_mapcache(void *ptr)
+         entry = entry->next;
+     }
+     if (!entry) {
+-        DPRINTF("Trying to find address %p that is not in the mapcache!\n", ptr);
+-        raddr = 0;
++        raddr = ~0ULL;
+     } else {
+         raddr = (reventry->paddr_index << MCACHE_BUCKET_SHIFT) +
+              ((unsigned long) ptr - (unsigned long) entry->vaddr_base);
+-- 
+2.34.1
+

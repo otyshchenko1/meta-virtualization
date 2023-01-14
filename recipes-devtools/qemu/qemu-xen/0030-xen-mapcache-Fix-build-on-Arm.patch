@@ -1,0 +1,36 @@
+From dfe6024c578250da65cef5029ff19f9b76f89f38 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 19 Sep 2022 21:59:55 +0300
+Subject: [PATCH 30/62] xen-mapcache: Fix build on Arm
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+../hw/xen/xen-mapcache.c: In function ‘xen_map_grant_dyn’:
+../hw/xen/xen-mapcache.c:668:9: error: ‘refs’ may be used uninitialized
+   in this function [-Werror=maybe-uninitialized]
+  668 |         g_free(refs);
+      |         ^~~~~~~~~~~~
+cc1: all warnings being treated as errors
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/xen/xen-mapcache.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xen/xen-mapcache.c b/hw/xen/xen-mapcache.c
+index e294307452..83f0439c5f 100644
+--- a/hw/xen/xen-mapcache.c
++++ b/hw/xen/xen-mapcache.c
+@@ -618,7 +618,7 @@ static void *xen_map_grant_dyn(MemoryRegion **mr, hwaddr addr, hwaddr *plen,
+     unsigned int i;
+     unsigned int nrefs = (page_off + *plen + XC_PAGE_SIZE - 1) >> XC_PAGE_SHIFT;
+     uint32_t ref = (addr - XEN_GRANT_ADDR_OFF) >> XC_PAGE_SHIFT;
+-    uint32_t *refs;
++    uint32_t *refs = NULL;
+     unsigned int prot = PROT_READ;
+     struct XENMappedGrantRegion *mgr = NULL;
+ 
+-- 
+2.34.1
+

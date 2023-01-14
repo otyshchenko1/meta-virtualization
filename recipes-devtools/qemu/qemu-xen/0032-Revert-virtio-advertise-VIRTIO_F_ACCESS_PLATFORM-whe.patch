@@ -1,0 +1,43 @@
+From 547d034ce2cdf6123e900d1487b0e1f8135bd8d8 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 19 Sep 2022 22:00:34 +0300
+Subject: [PATCH 32/62] Revert "virtio: advertise VIRTIO_F_ACCESS_PLATFORM when
+ acting as Xen backend"
+
+This reverts commit b1c5ce98b74ad6612bba2c97cdb4e45d7a020620.
+
+Current patch could be avoided by passing "iommu_platform=on" property
+via cmd line. For example:
+-device virtio-blk-pci,scsi=off,disable-legacy=on,iommu_platform=on,
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/virtio/virtio-pci.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/hw/virtio/virtio-pci.c b/hw/virtio/virtio-pci.c
+index f30b4822ed..7cf1231c1c 100644
+--- a/hw/virtio/virtio-pci.c
++++ b/hw/virtio/virtio-pci.c
+@@ -33,7 +33,6 @@
+ #include "hw/pci/msix.h"
+ #include "hw/loader.h"
+ #include "sysemu/kvm.h"
+-#include "sysemu/xen.h"
+ #include "virtio-pci.h"
+ #include "qemu/range.h"
+ #include "hw/virtio/virtio-bus.h"
+@@ -1611,10 +1610,6 @@ static void virtio_pci_pre_plugged(DeviceState *d, Error **errp)
+         virtio_add_feature(&vdev->host_features, VIRTIO_F_VERSION_1);
+     }
+ 
+-    if (xen_enabled()) {
+-        virtio_add_feature(&vdev->host_features, VIRTIO_F_ACCESS_PLATFORM);
+-    }
+-
+     virtio_add_feature(&vdev->host_features, VIRTIO_F_BAD_FEATURE);
+ }
+ 
+-- 
+2.34.1
+

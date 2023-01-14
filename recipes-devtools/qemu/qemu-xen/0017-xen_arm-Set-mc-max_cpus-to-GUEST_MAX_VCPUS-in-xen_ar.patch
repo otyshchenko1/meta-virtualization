@@ -1,0 +1,46 @@
+From 328552c680a74bcf03ae34ac8d4baa0a3352a66d Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Sat, 14 Jan 2023 18:03:01 +0200
+Subject: [PATCH 17/62] xen_arm: Set mc->max_cpus to GUEST_MAX_VCPUS in
+ xen_arm_init()
+
+The number of vCPUs used for the IOREQ configuration (machine->smp.cpus)
+should really match the system value as for each vCPU we setup a dedicated
+evtchn for the communication with Xen at the runtime. This is needed
+for the IOREQ to be properly configured and work if the involved domain
+has more than one vCPU assigned.
+
+Set the number of current supported guest vCPUs here (128) which is
+defined in public header arch-arm.h. And the toolstack should then
+pass max_vcpus using "-smp" arg.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/arm/xen_arm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hw/arm/xen_arm.c b/hw/arm/xen_arm.c
+index f248b5744a..ac1fa72816 100644
+--- a/hw/arm/xen_arm.c
++++ b/hw/arm/xen_arm.c
+@@ -118,7 +118,7 @@ static void xen_enable_tpm(void)
+     sysbus_realize_and_unref(busdev, &error_fatal);
+     sysbus_mmio_map(busdev, 0, GUEST_TPM_BASE);
+ 
+-    DPRINTF("Connected tpmdev at address 0x%lx\n", GUEST_TPM_BASE);
++    DPRINTF("Connected tpmdev at address 0x%llx\n", GUEST_TPM_BASE);
+ #endif
+ }
+ 
+@@ -143,7 +143,7 @@ static void xen_arm_machine_class_init(ObjectClass *oc, void *data)
+     MachineClass *mc = MACHINE_CLASS(oc);
+     mc->desc = "Xen Para-virtualized PC";
+     mc->init = xen_arm_init;
+-    mc->max_cpus = 1;
++    mc->max_cpus = GUEST_MAX_VCPUS;
+     machine_class_allow_dynamic_sysbus_dev(mc, TYPE_TPM_TIS_SYSBUS);
+ }
+ 
+-- 
+2.34.1
+

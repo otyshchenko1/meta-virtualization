@@ -1,7 +1,7 @@
-From b15ef88d512a1399d3bfd5972ac7d4739e193909 Mon Sep 17 00:00:00 2001
+From 38aba8b39b136872e774263a5739cc23c54b427b Mon Sep 17 00:00:00 2001
 From: Vikram Garhwal <vikram.garhwal@amd.com>
 Date: Fri, 1 Jul 2022 17:28:14 -0700
-Subject: [PATCH 08/12] accel/xen/xen-all: export xenstore_record_dm_state
+Subject: [PATCH 08/62] accel/xen/xen-all: export xenstore_record_dm_state
 
 Signed-off-by: Vikram Garhwal <vikram.garhwal@amd.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
@@ -44,5 +44,5 @@ index 0f9962b1c1..f044184f59 100644
  
  #endif /* QEMU_HW_XEN_H */
 -- 
-2.17.1
+2.34.1
 

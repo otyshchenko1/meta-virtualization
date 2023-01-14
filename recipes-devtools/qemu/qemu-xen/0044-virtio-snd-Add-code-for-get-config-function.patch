@@ -1,0 +1,33 @@
+From db60789a2f59c103d1d8768bcbe53004786848b2 Mon Sep 17 00:00:00 2001
+From: Vladyslav Goncharuk <vladyslav_goncharuk@epam.com>
+Date: Tue, 20 Dec 2022 15:35:29 +0200
+Subject: [PATCH 44/62] virtio-snd: Add code for get config function
+
+Signed-off-by: Shreyansh Chouhan <chouhan.shreyansh2702@gmail.com>
+---
+ hw/audio/virtio-snd.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/hw/audio/virtio-snd.c b/hw/audio/virtio-snd.c
+index ae438aa7ec..afa38adee7 100644
+--- a/hw/audio/virtio-snd.c
++++ b/hw/audio/virtio-snd.c
+@@ -41,6 +41,15 @@
+ 
+ static void virtio_snd_get_config(VirtIODevice *vdev, uint8_t *config)
+ {
++    VirtIOSound *s = VIRTIO_SOUND(vdev);
++    virtio_snd_config sndcfg;
++
++    memset(&sndcfg, 0, sizeof(virtio_snd_config));
++    stl_le_p(&(sndcfg.jacks), s->snd_conf.jacks);
++    stl_le_p(&(sndcfg.streams), s->snd_conf.streams);
++    stl_le_p(&(sndcfg.chmaps), s->snd_conf.chmaps);
++
++    memcpy(config, &sndcfg, sizeof(virtio_snd_config));
+ }
+ 
+ static void virtio_snd_set_config(VirtIODevice *vdev, const uint8_t *config)
+-- 
+2.34.1
+

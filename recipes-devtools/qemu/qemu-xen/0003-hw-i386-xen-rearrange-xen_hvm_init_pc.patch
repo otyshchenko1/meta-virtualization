@@ -1,7 +1,7 @@
-From a3fecd2b52b5e76a3460eb7c2d81f7cba45511de Mon Sep 17 00:00:00 2001
+From 0c8d26d07c24c180bebd3ca2db752c42340fe352 Mon Sep 17 00:00:00 2001
 From: Vikram Garhwal <vikram.garhwal@amd.com>
 Date: Fri, 1 Jul 2022 16:32:33 -0700
-Subject: [PATCH 03/12] hw/i386/xen: rearrange xen_hvm_init_pc
+Subject: [PATCH 03/62] hw/i386/xen: rearrange xen_hvm_init_pc
 
 Move references to:
 - xen_get_vmport_regs_pfn
@@ -21,10 +21,10 @@ Reviewed-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
  1 file changed, 25 insertions(+), 24 deletions(-)
 
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 7ce672e5a5..48b9b16286 100644
+index 0731f70410..b601129895 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -1423,12 +1423,6 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1429,12 +1429,6 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
      state->exit.notify = xen_exit_notifier;
      qemu_add_exit_notifier(&state->exit);
  
@@ -37,7 +37,7 @@ index 7ce672e5a5..48b9b16286 100644
      /*
       * Register wake-up support in QMP query-current-machine API
       */
-@@ -1439,23 +1433,6 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1445,23 +1439,6 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
          goto err;
      }
  
@@ -59,9 +59,9 @@ index 7ce672e5a5..48b9b16286 100644
 -    }
 -
      /* Note: cpus is empty at this point in init */
-     state->cpu_by_vcpu_id = g_malloc0(max_cpus * sizeof(CPUState *));
+     state->cpu_by_vcpu_id = g_new0(CPUState *, max_cpus);
  
-@@ -1493,7 +1470,6 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1499,7 +1476,6 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
  #else
      xen_map_cache_init(NULL, state);
  #endif
@@ -69,7 +69,7 @@ index 7ce672e5a5..48b9b16286 100644
  
      qemu_add_vm_change_state_handler(xen_hvm_change_state_handler, state);
  
-@@ -1520,6 +1496,31 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
+@@ -1526,6 +1502,31 @@ void xen_hvm_init_pc(PCMachineState *pcms, MemoryRegion **ram_memory)
      QLIST_INIT(&xen_physmap);
      xen_read_physmap(state);
  
@@ -102,5 +102,5 @@ index 7ce672e5a5..48b9b16286 100644
      pcms->acpi_build_enabled = false;
  
 -- 
-2.17.1
+2.34.1
 

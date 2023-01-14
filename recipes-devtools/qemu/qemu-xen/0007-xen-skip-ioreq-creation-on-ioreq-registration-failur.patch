@@ -1,7 +1,7 @@
-From 4dde07916535879f27c5010f3048941cfd1e2c93 Mon Sep 17 00:00:00 2001
+From 049c0b04abf1764a53f2416a65f41e008793ae12 Mon Sep 17 00:00:00 2001
 From: Stefano Stabellini <stefano.stabellini@amd.com>
 Date: Fri, 1 Jul 2022 18:50:59 -0700
-Subject: [PATCH 07/12] xen: skip ioreq creation on ioreq registration failure
+Subject: [PATCH 07/62] xen: skip ioreq creation on ioreq registration failure
 
 On ARM it is possible to have a functioning xenpv machine with only the
 PV backends and no IOREQ server. If the IOREQ server creation fails
@@ -13,10 +13,10 @@ Signed-off-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
  1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/hw/xen/xen-hvm-common.c b/hw/xen/xen-hvm-common.c
-index 926397fe78..7dc4488484 100644
+index 202683c902..8fa1aa23f4 100644
 --- a/hw/xen/xen-hvm-common.c
 +++ b/hw/xen/xen-hvm-common.c
-@@ -776,7 +776,11 @@ void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
+@@ -781,7 +781,11 @@ void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
          goto err;
      }
  
@@ -29,7 +29,7 @@ index 926397fe78..7dc4488484 100644
  
      state->exit.notify = xen_exit_notifier;
      qemu_add_exit_notifier(&state->exit);
-@@ -841,6 +845,7 @@ void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
+@@ -846,6 +850,7 @@ void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
      QLIST_INIT(&state->dev_list);
      device_listener_register(&state->device_listener);
  
@@ -38,5 +38,5 @@ index 926397fe78..7dc4488484 100644
  
      /* Initialize backend core & drivers */
 -- 
-2.17.1
+2.34.1
 

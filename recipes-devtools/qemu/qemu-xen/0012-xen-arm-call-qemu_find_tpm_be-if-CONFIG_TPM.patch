@@ -1,7 +1,7 @@
-From 9b6ddbba3c4e180682b2980cf62b392429999627 Mon Sep 17 00:00:00 2001
+From 1f9fd09d5b3f7005ce72788ce255533026410b61 Mon Sep 17 00:00:00 2001
 From: Stefano Stabellini <stefano.stabellini@amd.com>
 Date: Thu, 7 Jul 2022 14:35:33 -0700
-Subject: [PATCH 12/12] xen-arm: call qemu_find_tpm_be if CONFIG_TPM
+Subject: [PATCH 12/62] xen-arm: call qemu_find_tpm_be if CONFIG_TPM
 
 qemu_find_tpm_be is only availablen when CONFIG_TPM is enabled.
 So #ifdef the call to make sure the code builds correctly even when
@@ -68,5 +68,5 @@ index 0922e3db84..f248b5744a 100644
      return;
  }
 -- 
-2.17.1
+2.34.1
 

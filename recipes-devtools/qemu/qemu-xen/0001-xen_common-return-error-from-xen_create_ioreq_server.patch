@@ -1,7 +1,7 @@
-From 514ecdeea4700fa472b9f799dbdc8722c341806b Mon Sep 17 00:00:00 2001
+From f208a9c47273d884c85e4ab87812939a7bc2fd6f Mon Sep 17 00:00:00 2001
 From: Stefano Stabellini <stefano.stabellini@amd.com>
 Date: Fri, 1 Jul 2022 18:48:03 -0700
-Subject: [PATCH 01/12] xen_common: return error from xen_create_ioreq_server
+Subject: [PATCH 01/62] xen_common: return error from xen_create_ioreq_server
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
 ---
@@ -9,10 +9,10 @@ Signed-off-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
  1 file changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/include/hw/xen/xen_common.h b/include/hw/xen/xen_common.h
-index 82e56339dd..d5c1cd2845 100644
+index 179741ff79..0dbf70394b 100644
 --- a/include/hw/xen/xen_common.h
 +++ b/include/hw/xen/xen_common.h
-@@ -467,8 +467,8 @@ static inline void xen_unmap_pcidev(domid_t dom,
+@@ -473,8 +473,8 @@ static inline void xen_unmap_pcidev(domid_t dom,
  {
  }
  
@@ -23,7 +23,7 @@ index 82e56339dd..d5c1cd2845 100644
  {
  }
  
-@@ -600,8 +600,8 @@ static inline void xen_unmap_pcidev(domid_t dom,
+@@ -606,8 +606,8 @@ static inline void xen_unmap_pcidev(domid_t dom,
                                                    PCI_FUNC(pci_dev->devfn));
  }
  
@@ -34,7 +34,7 @@ index 82e56339dd..d5c1cd2845 100644
  {
      int rc = xendevicemodel_create_ioreq_server(xen_dmod, dom,
                                                  HVM_IOREQSRV_BUFIOREQ_ATOMIC,
-@@ -609,12 +609,14 @@ static inline void xen_create_ioreq_server(domid_t dom,
+@@ -615,12 +615,14 @@ static inline void xen_create_ioreq_server(domid_t dom,
  
      if (rc == 0) {
          trace_xen_ioreq_server_create(*ioservid);
@@ -51,5 +51,5 @@ index 82e56339dd..d5c1cd2845 100644
  
  static inline void xen_destroy_ioreq_server(domid_t dom,
 -- 
-2.17.1
+2.34.1
 

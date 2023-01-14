@@ -1,7 +1,7 @@
-From 02e768ddde33dc130ee9324199ff7b4bad0fc4c3 Mon Sep 17 00:00:00 2001
+From 9893f729b68b49c26601bfb9743a416dcecff724 Mon Sep 17 00:00:00 2001
 From: Vikram Garhwal <vikram.garhwal@amd.com>
 Date: Fri, 1 Jul 2022 15:59:47 -0700
-Subject: [PATCH 06/12] xen-hvm: move common functions to
+Subject: [PATCH 06/62] xen-hvm: move common functions to
  hw/xen/xen-hvm-common.c
 
 Extract common functionalities from xen-hvm.c and move them to
@@ -17,20 +17,22 @@ of functions. Build fixes will be in the next patch.
 Signed-off-by: Vikram Garhwal <vikram.garhwal@amd.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
 Reviewed-by: Stefano Stabellini <stefano.stabellini@xilinx.com>
+[Rebased to v7.0.0]
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
 ---
  hw/i386/xen/trace-events        |  14 -
- hw/i386/xen/xen-hvm.c           | 929 +-------------------------------
+ hw/i386/xen/xen-hvm.c           | 934 +-------------------------------
  hw/xen/meson.build              |   5 +-
  hw/xen/trace-events             |  14 +
- hw/xen/xen-hvm-common.c         | 857 +++++++++++++++++++++++++++++
+ hw/xen/xen-hvm-common.c         | 862 +++++++++++++++++++++++++++++
  include/hw/i386/xen_arch_hvm.h  |   1 +
- include/hw/xen/xen-hvm-common.h |  97 ++++
- 7 files changed, 983 insertions(+), 934 deletions(-)
+ include/hw/xen/xen-hvm-common.h |  98 ++++
+ 7 files changed, 989 insertions(+), 939 deletions(-)
  create mode 100644 hw/xen/xen-hvm-common.c
  create mode 100644 include/hw/xen/xen-hvm-common.h
 
 diff --git a/hw/i386/xen/trace-events b/hw/i386/xen/trace-events
-index dfa782d081..acc5fcb406 100644
+index a0c89d91c4..5d0a8d6dcf 100644
 --- a/hw/i386/xen/trace-events
 +++ b/hw/i386/xen/trace-events
 @@ -7,17 +7,3 @@ xen_platform_log(char *s) "xen platform: %s"
@@ -52,10 +54,10 @@ index dfa782d081..acc5fcb406 100644
 -cpu_ioreq_config_write(void *req, uint32_t sbdf, uint32_t reg, uint32_t size, uint32_t data) "I/O=%p sbdf=0x%x reg=%u size=%u data=0x%x"
 -
 diff --git a/hw/i386/xen/xen-hvm.c b/hw/i386/xen/xen-hvm.c
-index 081b52fb0c..efbb4cae7e 100644
+index aa8f38b49d..1c3fe464c8 100644
 --- a/hw/i386/xen/xen-hvm.c
 +++ b/hw/i386/xen/xen-hvm.c
-@@ -10,48 +10,20 @@
+@@ -10,47 +10,20 @@
  
  #include "qemu/osdep.h"
  #include "qemu/units.h"
@@ -85,7 +87,6 @@ index 081b52fb0c..efbb4cae7e 100644
 -#include "sysemu/xen.h"
 -#include "sysemu/xen-mapcache.h"
 -#include "trace.h"
--#include "exec/address-spaces.h"
 -
 -#include <xen/hvm/ioreq.h>
 +#include "hw/xen/xen-hvm-common.h"
@@ -109,7 +110,7 @@ index 081b52fb0c..efbb4cae7e 100644
  /* Compatibility with older version */
  
  /* This allows QEMU to build on a system that has Xen 4.5 or earlier
-@@ -77,26 +49,9 @@ typedef struct shared_vmport_iopage shared_vmport_iopage_t;
+@@ -76,26 +49,9 @@ typedef struct shared_vmport_iopage shared_vmport_iopage_t;
  #endif
  static shared_vmport_iopage_t *shared_vmport_page;
  
@@ -139,7 +140,7 @@ index 081b52fb0c..efbb4cae7e 100644
  static QLIST_HEAD(, XenPhysmap) xen_physmap;
  static const XenPhysmap *log_for_dirtybit = NULL;
  /* Buffer used by xen_sync_dirty_bitmap */
-@@ -104,39 +59,6 @@ static unsigned long *dirty_bitmap = NULL;
+@@ -103,40 +59,6 @@ static unsigned long *dirty_bitmap = NULL;
  static Notifier suspend;
  static Notifier wakeup;
  
@@ -153,6 +154,7 @@ index 081b52fb0c..efbb4cae7e 100644
 -    ioservid_t ioservid;
 -    shared_iopage_t *shared_page;
 -    buffered_iopage_t *buffered_io_page;
+-    xenforeignmemory_resource_handle *fres;
 -    QEMUTimer *buffered_io_timer;
 -    CPUState **cpu_by_vcpu_id;
 -    /* the evtchn port for polling the notification, */
@@ -332,11 +334,12 @@ index 081b52fb0c..efbb4cae7e 100644
  static void xen_sync_dirty_bitmap(XenIOState *state,
                                    hwaddr start_addr,
                                    ram_addr_t size)
-@@ -695,276 +478,6 @@ static MemoryListener xen_memory_listener = {
+@@ -696,277 +479,6 @@ static MemoryListener xen_memory_listener = {
      .priority = 10,
  };
  
 -static MemoryListener xen_io_listener = {
+-    .name = "xen-io",
 -    .region_add = xen_io_add,
 -    .region_del = xen_io_del,
 -    .priority = 10,
@@ -609,7 +612,7 @@ index 081b52fb0c..efbb4cae7e 100644
  static void regs_to_cpu(vmware_regs_t *vmport_regs, ioreq_t *req)
  {
      X86CPU *cpu;
-@@ -1008,218 +521,6 @@ static void handle_vmport_ioreq(XenIOState *state, ioreq_t *req)
+@@ -1010,223 +522,6 @@ static void handle_vmport_ioreq(XenIOState *state, ioreq_t *req)
      current_cpu = NULL;
  }
  
@@ -651,10 +654,11 @@ index 081b52fb0c..efbb4cae7e 100644
 -    }
 -}
 -
--static int handle_buffered_iopage(XenIOState *state)
+-static bool handle_buffered_iopage(XenIOState *state)
 -{
 -    buffered_iopage_t *buf_page = state->buffered_io_page;
 -    buf_ioreq_t *buf_req = NULL;
+-    bool handled_ioreq = false;
 -    ioreq_t req;
 -    int qw;
 -
@@ -708,9 +712,10 @@ index 081b52fb0c..efbb4cae7e 100644
 -        assert(!req.data_is_ptr);
 -
 -        qatomic_add(&buf_page->read_pointer, qw + 1);
+-        handled_ioreq = true;
 -    }
 -
--    return req.count;
+-    return handled_ioreq;
 -}
 -
 -static void handle_buffered_io(void *opaque)
@@ -820,6 +825,9 @@ index 081b52fb0c..efbb4cae7e 100644
 -    XenIOState *state = container_of(n, XenIOState, exit);
 -
 -    xen_destroy_ioreq_server(xen_domid, state->ioservid);
+-    if (state->fres != NULL) {
+-        xenforeignmemory_unmap_resource(xen_fmem, state->fres);
+-    }
 -
 -    xenevtchn_close(state->xce_handle);
 -    xs_daemon_close(state->xenstore);
@@ -828,14 +836,13 @@ index 081b52fb0c..efbb4cae7e 100644
  #ifdef XEN_COMPAT_PHYSMAP
  static void xen_read_physmap(XenIOState *state)
  {
-@@ -1279,179 +580,17 @@ static void xen_wakeup_notifier(Notifier *notifier, void *data)
+@@ -1286,178 +581,17 @@ static void xen_wakeup_notifier(Notifier *notifier, void *data)
      xc_set_hvm_param(xen_xc, xen_domid, HVM_PARAM_ACPI_S_STATE, 0);
  }
  
 -static int xen_map_ioreq_server(XenIOState *state)
 -{
 -    void *addr = NULL;
--    xenforeignmemory_resource_handle *fres;
 -    xen_pfn_t ioreq_pfn;
 -    xen_pfn_t bufioreq_pfn;
 -    evtchn_port_t bufioreq_evtchn;
@@ -847,12 +854,12 @@ index 081b52fb0c..efbb4cae7e 100644
 -     */
 -    QEMU_BUILD_BUG_ON(XENMEM_resource_ioreq_server_frame_bufioreq != 0);
 -    QEMU_BUILD_BUG_ON(XENMEM_resource_ioreq_server_frame_ioreq(0) != 1);
--    fres = xenforeignmemory_map_resource(xen_fmem, xen_domid,
+-    state->fres = xenforeignmemory_map_resource(xen_fmem, xen_domid,
 -                                         XENMEM_resource_ioreq_server,
 -                                         state->ioservid, 0, 2,
 -                                         &addr,
 -                                         PROT_READ | PROT_WRITE, 0);
--    if (fres != NULL) {
+-    if (state->fres != NULL) {
 -        trace_xen_map_resource_ioreq(state->ioservid, addr);
 -        state->buffered_io_page = addr;
 -        state->shared_page = addr + TARGET_PAGE_SIZE;
@@ -919,7 +926,7 @@ index 081b52fb0c..efbb4cae7e 100644
      xen_pfn_t ioreq_pfn;
      XenIOState *state;
  
-     state = g_malloc0(sizeof (XenIOState));
+     state = g_new0(XenIOState, 1);
  
 -    state->xce_handle = xenevtchn_open(NULL, 0);
 -    if (state->xce_handle == NULL) {
@@ -949,7 +956,7 @@ index 081b52fb0c..efbb4cae7e 100644
 -    }
 -
 -    /* Note: cpus is empty at this point in init */
--    state->cpu_by_vcpu_id = g_malloc0(max_cpus * sizeof(CPUState *));
+-    state->cpu_by_vcpu_id = g_new0(CPUState *, max_cpus);
 -
 -    rc = xen_set_ioreq_server_state(xen_domid, state->ioservid, true);
 -    if (rc < 0) {
@@ -958,7 +965,7 @@ index 081b52fb0c..efbb4cae7e 100644
 -        goto err;
 -    }
 -
--    state->ioreq_local_port = g_malloc0(max_cpus * sizeof (evtchn_port_t));
+-    state->ioreq_local_port = g_new0(evtchn_port_t, max_cpus);
 -
 -    /* FIXME: how about if we overflow the page here? */
 -    for (i = 0; i < max_cpus; i++) {
@@ -1010,7 +1017,7 @@ index 081b52fb0c..efbb4cae7e 100644
  
      QLIST_INIT(&xen_physmap);
      xen_read_physmap(state);
-@@ -1491,59 +630,11 @@ err:
+@@ -1497,59 +631,11 @@ err:
      exit(1);
  }
  
@@ -1084,7 +1091,7 @@ index a7bdecf309..37ea0427c3 100644
 +  'xen-hvm-common.c',
 +))
 diff --git a/hw/xen/trace-events b/hw/xen/trace-events
-index 1a770ab251..94e9a8a866 100644
+index 2c8f238f42..02ca1183da 100644
 --- a/hw/xen/trace-events
 +++ b/hw/xen/trace-events
 @@ -42,6 +42,20 @@ xs_node_vscanf(char *path, char *value) "%s %s"
@@ -1110,10 +1117,10 @@ index 1a770ab251..94e9a8a866 100644
  xen_remap_bucket(uint64_t index) "index 0x%"PRIx64
 diff --git a/hw/xen/xen-hvm-common.c b/hw/xen/xen-hvm-common.c
 new file mode 100644
-index 0000000000..926397fe78
+index 0000000000..202683c902
 --- /dev/null
 +++ b/hw/xen/xen-hvm-common.c
-@@ -0,0 +1,857 @@
+@@ -0,0 +1,862 @@
 +#include "qemu/osdep.h"
 +#include "qemu/units.h"
 +#include "qapi/error.h"
@@ -1129,6 +1136,7 @@ index 0000000000..926397fe78
 +MemoryRegion ram_memory;
 +
 +MemoryListener xen_io_listener = {
++    .name = "xen-io",
 +    .region_add = xen_io_add,
 +    .region_del = xen_io_del,
 +    .priority = 10,
@@ -1539,10 +1547,11 @@ index 0000000000..926397fe78
 +    }
 +}
 +
-+static int handle_buffered_iopage(XenIOState *state)
++static bool handle_buffered_iopage(XenIOState *state)
 +{
 +    buffered_iopage_t *buf_page = state->buffered_io_page;
 +    buf_ioreq_t *buf_req = NULL;
++    bool handled_ioreq = false;
 +    ioreq_t req;
 +    int qw;
 +
@@ -1596,9 +1605,10 @@ index 0000000000..926397fe78
 +        assert(!req.data_is_ptr);
 +
 +        qatomic_add(&buf_page->read_pointer, qw + 1);
++        handled_ioreq = true;
 +    }
 +
-+    return req.count;
++    return handled_ioreq;
 +}
 +
 +static void handle_buffered_io(void *opaque)
@@ -1708,6 +1718,9 @@ index 0000000000..926397fe78
 +    XenIOState *state = container_of(n, XenIOState, exit);
 +
 +    xen_destroy_ioreq_server(xen_domid, state->ioservid);
++    if (state->fres != NULL) {
++        xenforeignmemory_unmap_resource(xen_fmem, state->fres);
++    }
 +
 +    xenevtchn_close(state->xce_handle);
 +    xs_daemon_close(state->xenstore);
@@ -1716,7 +1729,6 @@ index 0000000000..926397fe78
 +static int xen_map_ioreq_server(XenIOState *state)
 +{
 +    void *addr = NULL;
-+    xenforeignmemory_resource_handle *fres;
 +    xen_pfn_t ioreq_pfn;
 +    xen_pfn_t bufioreq_pfn;
 +    evtchn_port_t bufioreq_evtchn;
@@ -1728,12 +1740,12 @@ index 0000000000..926397fe78
 +     */
 +    QEMU_BUILD_BUG_ON(XENMEM_resource_ioreq_server_frame_bufioreq != 0);
 +    QEMU_BUILD_BUG_ON(XENMEM_resource_ioreq_server_frame_ioreq(0) != 1);
-+    fres = xenforeignmemory_map_resource(xen_fmem, xen_domid,
++    state->fres = xenforeignmemory_map_resource(xen_fmem, xen_domid,
 +                                         XENMEM_resource_ioreq_server,
 +                                         state->ioservid, 0, 2,
 +                                         &addr,
 +                                         PROT_READ | PROT_WRITE, 0);
-+    if (fres != NULL) {
++    if (state->fres != NULL) {
 +        trace_xen_map_resource_ioreq(state->ioservid, addr);
 +        state->buffered_io_page = addr;
 +        state->shared_page = addr + TARGET_PAGE_SIZE;
@@ -1917,7 +1929,7 @@ index 0000000000..926397fe78
 +        goto err;
 +    }
 +
-+    state->ioreq_local_port = g_malloc0(max_cpus * sizeof (evtchn_port_t));
++    state->ioreq_local_port = g_new0(evtchn_port_t, max_cpus);
 +
 +    /* FIXME: how about if we overflow the page here? */
 +    for (i = 0; i < max_cpus; i++) {
@@ -1985,10 +1997,10 @@ index 1b2c71ba4f..1000f8f543 100644
  void arch_xen_set_memory(XenIOState *state,
 diff --git a/include/hw/xen/xen-hvm-common.h b/include/hw/xen/xen-hvm-common.h
 new file mode 100644
-index 0000000000..c16057835f
+index 0000000000..2979f84ee2
 --- /dev/null
 +++ b/include/hw/xen/xen-hvm-common.h
-@@ -0,0 +1,97 @@
+@@ -0,0 +1,98 @@
 +#ifndef HW_XEN_HVM_COMMON_H
 +#define HW_XEN_HVM_COMMON_H
 +
@@ -2050,6 +2062,7 @@ index 0000000000..c16057835f
 +    ioservid_t ioservid;
 +    shared_iopage_t *shared_page;
 +    buffered_iopage_t *buffered_io_page;
++    xenforeignmemory_resource_handle *fres;
 +    QEMUTimer *buffered_io_timer;
 +    CPUState **cpu_by_vcpu_id;
 +    /* the evtchn port for polling the notification, */
@@ -2087,5 +2100,5 @@ index 0000000000..c16057835f
 +void cpu_ioreq_pio(ioreq_t *req);
 +#endif /* HW_XEN_HVM_COMMON_H */
 -- 
-2.17.1
+2.34.1
 

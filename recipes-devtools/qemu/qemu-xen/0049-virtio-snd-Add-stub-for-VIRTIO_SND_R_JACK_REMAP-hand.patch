@@ -1,0 +1,56 @@
+From 28a13f133aeceecfac0bdf46f0057f7149e80822 Mon Sep 17 00:00:00 2001
+From: Vladyslav Goncharuk <vladyslav_goncharuk@epam.com>
+Date: Tue, 20 Dec 2022 15:40:46 +0200
+Subject: [PATCH 49/62] virtio-snd: Add stub for VIRTIO_SND_R_JACK_REMAP
+ handler
+
+Signed-off-by: Shreyansh Chouhan <chouhan.shreyansh2702@gmail.com>
+---
+ hw/audio/virtio-snd.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/hw/audio/virtio-snd.c b/hw/audio/virtio-snd.c
+index c2af26f3cb..aec3e86db2 100644
+--- a/hw/audio/virtio-snd.c
++++ b/hw/audio/virtio-snd.c
+@@ -167,6 +167,27 @@ done:
+     return sizeof(virtio_snd_hdr) + sz;
+ }
+ 
++/*
++ * Handles VIRTIO_SND_R_JACK_REMAP.
++ * Not implemented yet.
++ *
++ * @s: VirtIOSound card
++ * @elem: The request element from control queue
++ */
++static uint32_t virtio_snd_handle_jack_remap(VirtIOSound *s,
++                                             VirtQueueElement *elem)
++{
++    virtio_snd_hdr resp;
++    resp.code = VIRTIO_SND_S_OK;
++
++    /* TODO: implement remap */
++
++    size_t sz;
++    sz = iov_from_buf(elem->in_sg, elem->in_num, 0, &resp, sizeof(resp));
++    assert(sz == sizeof(virtio_snd_hdr));
++    return sz;
++}
++
+ /* The control queue handler. Pops an element from the control virtqueue,
+  * checks the header and performs the requested action. Finally marks the
+  * element as used.
+@@ -209,7 +230,8 @@ static void virtio_snd_handle_ctrl(VirtIODevice *vdev, VirtQueue *vq)
+             sz = virtio_snd_handle_jack_info(s, elem);
+             goto done;
+         } else if (ctrl.code == VIRTIO_SND_R_JACK_REMAP) {
+-            virtio_snd_log("VIRTIO_SND_R_JACK_REMAP");
++            sz = virtio_snd_handle_jack_remap(s, elem);
++            goto done;
+         } else if (ctrl.code == VIRTIO_SND_R_PCM_INFO) {
+             virtio_snd_log("VIRTIO_SND_R_PCM_INFO");
+         } else if (ctrl.code == VIRTIO_SND_R_PCM_SET_PARAMS) {
+-- 
+2.34.1
+

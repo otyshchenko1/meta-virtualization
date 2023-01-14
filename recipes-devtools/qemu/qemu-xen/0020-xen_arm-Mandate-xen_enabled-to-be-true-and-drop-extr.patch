@@ -1,0 +1,148 @@
+From 2aaa8a37ba7616b5c23e7d84211995520b5b8821 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Sat, 14 Jan 2023 18:10:30 +0200
+Subject: [PATCH 20/62] xen_arm: Mandate xen_enabled() to be true and drop
+ extra interface opening
+
+In order to use virtio backends we need to make sure that Xen accelerator
+is enabled (xen_enabled() returns true) as the memory/cache systems
+check for xen_enabled() to perform specific actions. Without that
+the xen-mapcache (which is needed for mapping guest memory) is not in use.
+
+Also drop extra interface opening as this is already done in xen-all.c
+(so drop xen_init_ioreq() completely) and skip virtio/tpm initialization
+if device emulation is not available.
+
+Alternatively the toolstack could pass required accelerator using "-M" arg
+(for example "-M xenpv,accel=xen").
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/arm/xen_arm.c                | 35 ++++++++++-----------------------
+ hw/xen/xen-hvm-common.c         | 11 +++++++----
+ include/hw/xen/xen-hvm-common.h |  4 ++--
+ 3 files changed, 19 insertions(+), 31 deletions(-)
+
+diff --git a/hw/arm/xen_arm.c b/hw/arm/xen_arm.c
+index c6f536dcd9..55507ddd86 100644
+--- a/hw/arm/xen_arm.c
++++ b/hw/arm/xen_arm.c
+@@ -150,30 +150,6 @@ void qmp_xen_set_global_dirty_log(bool enable, Error **errp)
+ {
+ }
+ 
+-static int xen_init_ioreq(XenIOState *state, unsigned int max_cpus)
+-{
+-    xen_dmod = xendevicemodel_open(0, 0);
+-    xen_xc = xc_interface_open(0, 0, 0);
+-
+-    if (xen_xc == NULL) {
+-        perror("xen: can't open xen interface\n");
+-        return -1;
+-    }
+-
+-    xen_fmem = xenforeignmemory_open(0, 0);
+-    if (xen_fmem == NULL) {
+-        perror("xen: can't open xen fmem interface\n");
+-        xc_interface_close(xen_xc);
+-        return -1;
+-    }
+-
+-    xen_register_ioreq(state, max_cpus, xen_memory_listener);
+-
+-    xenstore_record_dm_state(xenstore, "running");
+-
+-    return 0;
+-}
+-
+ static void xen_enable_tpm(void)
+ {
+ #ifdef CONFIG_TPM
+@@ -200,6 +176,12 @@ static void xen_enable_tpm(void)
+ static void xen_arm_init(MachineState *machine)
+ {
+     XenArmState *xam = XEN_ARM(machine);
++    int rc;
++
++    if (!xen_enabled()) {
++        error_report("xenpv machine requires the Xen accelerator");
++        exit(1);
++    }
+ 
+     if (machine->ram_size == 0) {
+         error_report("xenpv: ram_size must be specified");
+@@ -210,7 +192,9 @@ static void xen_arm_init(MachineState *machine)
+     xam->memmap = xen_memmap;
+     xam->irqmap = xen_irqmap;
+ 
+-    if (xen_init_ioreq(xam->state, machine->smp.cpus)) {
++    rc = xen_register_ioreq(xam->state, machine->smp.cpus, xen_memory_listener);
++    if (rc) {
++        DPRINTF("Device emulation is not available, only PV backend can be used\n");
+         return;
+     }
+ 
+@@ -231,6 +215,7 @@ static void xen_arm_machine_class_init(ObjectClass *oc, void *data)
+     mc->max_cpus = GUEST_MAX_VCPUS;
+     /* Set explicitly here to make sure that real ram_size is passed */
+     mc->default_ram_size = 0;
++    mc->default_machine_opts = "accel=xen";
+     machine_class_allow_dynamic_sysbus_dev(mc, TYPE_TPM_TIS_SYSBUS);
+ }
+ 
+diff --git a/hw/xen/xen-hvm-common.c b/hw/xen/xen-hvm-common.c
+index 8fa1aa23f4..f184b94f08 100644
+--- a/hw/xen/xen-hvm-common.c
++++ b/hw/xen/xen-hvm-common.c
+@@ -764,10 +764,10 @@ void xen_ram_alloc(ram_addr_t ram_addr, ram_addr_t size, MemoryRegion *mr,
+     g_free(pfn_list);
+ }
+ 
+-void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
+-                        MemoryListener xen_memory_listener)
++int xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
++                       MemoryListener xen_memory_listener)
+ {
+-    int i, rc;
++    int i, rc = -1;
+ 
+     state->xce_handle = xenevtchn_open(NULL, 0);
+     if (state->xce_handle == NULL) {
+@@ -850,6 +850,8 @@ void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
+     QLIST_INIT(&state->dev_list);
+     device_listener_register(&state->device_listener);
+ 
++    rc = 0;
++
+ no_ioreq:
+     xen_bus_init();
+ 
+@@ -860,8 +862,9 @@ no_ioreq:
+     }
+     xen_be_register_common();
+ 
+-    return;
++    return rc;
+ err:
+     error_report("xen hardware virtual machine initialisation failed");
+     exit(1);
++    return rc;
+ }
+diff --git a/include/hw/xen/xen-hvm-common.h b/include/hw/xen/xen-hvm-common.h
+index 2979f84ee2..e87d35d575 100644
+--- a/include/hw/xen/xen-hvm-common.h
++++ b/include/hw/xen/xen-hvm-common.h
+@@ -91,8 +91,8 @@ void xen_device_realize(DeviceListener *listener, DeviceState *dev);
+ void xen_device_unrealize(DeviceListener *listener, DeviceState *dev);
+ 
+ void xen_hvm_change_state_handler(void *opaque, bool running, RunState rstate);
+-void xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
+-                        MemoryListener xen_memory_listener);
++int xen_register_ioreq(XenIOState *state, unsigned int max_cpus,
++                       MemoryListener xen_memory_listener);
+ 
+ void cpu_ioreq_pio(ioreq_t *req);
+ #endif /* HW_XEN_HVM_COMMON_H */
+-- 
+2.34.1
+

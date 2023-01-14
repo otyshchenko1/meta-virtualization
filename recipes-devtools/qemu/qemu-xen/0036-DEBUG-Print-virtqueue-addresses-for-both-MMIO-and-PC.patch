@@ -1,0 +1,98 @@
+From 4e22a51f40d2b5df45cf0b25f40ca22bb7c3ed44 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Thu, 3 Nov 2022 11:18:46 +0200
+Subject: [PATCH 36/62] [DEBUG] Print virtqueue addresses for both MMIO and PCI
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ hw/virtio/virtio-mmio.c | 6 ++++++
+ hw/virtio/virtio-pci.c  | 6 ++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/hw/virtio/virtio-mmio.c b/hw/virtio/virtio-mmio.c
+index 688eccda94..b312227564 100644
+--- a/hw/virtio/virtio-mmio.c
++++ b/hw/virtio/virtio-mmio.c
+@@ -445,6 +445,7 @@ static void virtio_mmio_write(void *opaque, hwaddr offset, uint64_t value,
+             return;
+         }
+         proxy->vqs[vdev->queue_sel].desc[0] = value;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, offset, value);
+         break;
+     case VIRTIO_MMIO_QUEUE_DESC_HIGH:
+         if (proxy->legacy) {
+@@ -455,6 +456,7 @@ static void virtio_mmio_write(void *opaque, hwaddr offset, uint64_t value,
+             return;
+         }
+         proxy->vqs[vdev->queue_sel].desc[1] = value;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, offset, value);
+         break;
+     case VIRTIO_MMIO_QUEUE_AVAIL_LOW:
+         if (proxy->legacy) {
+@@ -465,6 +467,7 @@ static void virtio_mmio_write(void *opaque, hwaddr offset, uint64_t value,
+             return;
+         }
+         proxy->vqs[vdev->queue_sel].avail[0] = value;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, offset, value);
+         break;
+     case VIRTIO_MMIO_QUEUE_AVAIL_HIGH:
+         if (proxy->legacy) {
+@@ -475,6 +478,7 @@ static void virtio_mmio_write(void *opaque, hwaddr offset, uint64_t value,
+             return;
+         }
+         proxy->vqs[vdev->queue_sel].avail[1] = value;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, offset, value);
+         break;
+     case VIRTIO_MMIO_QUEUE_USED_LOW:
+         if (proxy->legacy) {
+@@ -485,6 +489,7 @@ static void virtio_mmio_write(void *opaque, hwaddr offset, uint64_t value,
+             return;
+         }
+         proxy->vqs[vdev->queue_sel].used[0] = value;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, offset, value);
+         break;
+     case VIRTIO_MMIO_QUEUE_USED_HIGH:
+         if (proxy->legacy) {
+@@ -494,6 +499,7 @@ static void virtio_mmio_write(void *opaque, hwaddr offset, uint64_t value,
+                           __func__, offset);
+             return;
+         }
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, offset, value);
+         proxy->vqs[vdev->queue_sel].used[1] = value;
+         break;
+     case VIRTIO_MMIO_MAGIC_VALUE:
+diff --git a/hw/virtio/virtio-pci.c b/hw/virtio/virtio-pci.c
+index 7cf1231c1c..dab449054c 100644
+--- a/hw/virtio/virtio-pci.c
++++ b/hw/virtio/virtio-pci.c
+@@ -1338,21 +1338,27 @@ static void virtio_pci_common_write(void *opaque, hwaddr addr,
+         break;
+     case VIRTIO_PCI_COMMON_Q_DESCLO:
+         proxy->vqs[vdev->queue_sel].desc[0] = val;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, addr, val);
+         break;
+     case VIRTIO_PCI_COMMON_Q_DESCHI:
+         proxy->vqs[vdev->queue_sel].desc[1] = val;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, addr, val);
+         break;
+     case VIRTIO_PCI_COMMON_Q_AVAILLO:
+         proxy->vqs[vdev->queue_sel].avail[0] = val;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, addr, val);
+         break;
+     case VIRTIO_PCI_COMMON_Q_AVAILHI:
+         proxy->vqs[vdev->queue_sel].avail[1] = val;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, addr, val);
+         break;
+     case VIRTIO_PCI_COMMON_Q_USEDLO:
+         proxy->vqs[vdev->queue_sel].used[0] = val;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, addr, val);
+         break;
+     case VIRTIO_PCI_COMMON_Q_USEDHI:
+         proxy->vqs[vdev->queue_sel].used[1] = val;
++        printf("%s: offset 0x%"HWADDR_PRIx" val %"PRIx64"\n", __func__, addr, val);
+         break;
+     default:
+         break;
+-- 
+2.34.1
+

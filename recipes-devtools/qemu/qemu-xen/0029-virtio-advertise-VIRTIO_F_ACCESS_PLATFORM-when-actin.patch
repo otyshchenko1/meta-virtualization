@@ -1,0 +1,40 @@
+From ad36638b4b6524acbb542c5d8a8c0dc404cf3a73 Mon Sep 17 00:00:00 2001
+From: Juergen Gross <jgross@suse.com>
+Date: Fri, 26 Aug 2022 14:56:44 +0200
+Subject: [PATCH 29/62] virtio: advertise VIRTIO_F_ACCESS_PLATFORM when acting
+ as Xen backend
+
+In order to signal virtio frontends in Xen guests they can use grants
+for virtio data pages set the VIRTIO_F_ACCESS_PLATFORM feature flag.
+
+Signed-off-by: Juergen Gross <jgross@suse.com>
+---
+ hw/virtio/virtio-pci.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/hw/virtio/virtio-pci.c b/hw/virtio/virtio-pci.c
+index 7cf1231c1c..f30b4822ed 100644
+--- a/hw/virtio/virtio-pci.c
++++ b/hw/virtio/virtio-pci.c
+@@ -33,6 +33,7 @@
+ #include "hw/pci/msix.h"
+ #include "hw/loader.h"
+ #include "sysemu/kvm.h"
++#include "sysemu/xen.h"
+ #include "virtio-pci.h"
+ #include "qemu/range.h"
+ #include "hw/virtio/virtio-bus.h"
+@@ -1610,6 +1611,10 @@ static void virtio_pci_pre_plugged(DeviceState *d, Error **errp)
+         virtio_add_feature(&vdev->host_features, VIRTIO_F_VERSION_1);
+     }
+ 
++    if (xen_enabled()) {
++        virtio_add_feature(&vdev->host_features, VIRTIO_F_ACCESS_PLATFORM);
++    }
++
+     virtio_add_feature(&vdev->host_features, VIRTIO_F_BAD_FEATURE);
+ }
+ 
+-- 
+2.34.1
+

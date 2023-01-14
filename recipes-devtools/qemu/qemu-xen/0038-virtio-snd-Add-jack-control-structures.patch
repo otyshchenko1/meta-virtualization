@@ -1,0 +1,65 @@
+From 46f955eabc24795a8cb371d5a13f4a4dbb0581a3 Mon Sep 17 00:00:00 2001
+From: Vladyslav Goncharuk <vladyslav_goncharuk@epam.com>
+Date: Tue, 20 Dec 2022 15:03:18 +0200
+Subject: [PATCH 38/62] virtio-snd: Add jack control structures
+
+Added structures for handling jack control requests
+to the header file.
+
+Signed-off-by: Shreyansh Chouhan <chouhan.shreyansh2702@gmail.com>
+---
+ include/hw/virtio/virtio-snd.h | 40 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/include/hw/virtio/virtio-snd.h b/include/hw/virtio/virtio-snd.h
+index bbbf174c51..f58b06a949 100644
+--- a/include/hw/virtio/virtio-snd.h
++++ b/include/hw/virtio/virtio-snd.h
+@@ -94,4 +94,44 @@ typedef struct virtio_snd_info {
+     uint32_t hda_fn_nid;
+ } virtio_snd_info;
+ 
++/* JACK CONTROL MESSAGES */
++
++typedef struct virtio_snd_jack_hdr {
++    /* VIRTIO_SND_R_JACK_* */
++    virtio_snd_hdr hdr;
++    /* 0 to (virtio_snd_config.jacks - 1) */
++    uint32_t jack_id;
++} virtio_snd_jack_hdr;
++
++/* Supported jack features */
++enum {
++    VIRTIO_SND_F_JACK_REMAP = 0
++};
++
++/* jack information structure */
++typedef struct virtio_snd_jack_info {
++    /* common header */
++    virtio_snd_info hdr;
++    /* 1 << VIRTIO_SND_JACK_F_* */
++    uint32_t features;
++    /* pin default configuration from HDA spec */
++    uint32_t hda_reg_defconf;
++    /* pin capabilities from HDA spec */
++    uint32_t hda_reg_caps;
++    /* connection status (0: disconnected, 1: connected) */
++    uint8_t connected;
++
++    uint8_t padding[7];
++} virtio_snd_jack_info;
++
++/* jack remapping control request */
++typedef struct virtio_snd_jack_remap {
++    /* .code = VIRTIO_SND_R_JACK_REMAP */
++    virtio_snd_jack_hdr hdr;
++    /* selected association number */
++    uint32_t association;
++    /* selected sequence number */
++    uint32_t sequence;
++} virtio_snd_jack_remap;
++
+ #endif
+-- 
+2.34.1
+

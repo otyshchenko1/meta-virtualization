@@ -1,0 +1,52 @@
+From d1aa5dd3eab6f290265afda98799ee4aa49a15e8 Mon Sep 17 00:00:00 2001
+From: Vladyslav Goncharuk <vladyslav_goncharuk@epam.com>
+Date: Tue, 20 Dec 2022 15:46:25 +0200
+Subject: [PATCH 60/62] virtio-snd: Add event vq and a handler stub
+
+Signed-off-by: Shreyansh Chouhan <chouhan.shreyansh2702@gmail.com>
+---
+ hw/audio/virtio-snd.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/hw/audio/virtio-snd.c b/hw/audio/virtio-snd.c
+index 80a34e1207..81a478d039 100644
+--- a/hw/audio/virtio-snd.c
++++ b/hw/audio/virtio-snd.c
+@@ -1080,6 +1080,18 @@ static void virtio_snd_handle_xfer(VirtIODevice *vdev, VirtQueue *vq)
+     }
+ }
+ 
++/*
++ * The event virtqueue handler.
++ * Not implemented yet.
++ *
++ * @vdev: VirtIOSound card
++ * @vq: event vq
++ */
++static void virtio_snd_handle_event(VirtIODevice *vdev, VirtQueue *vq)
++{
++    virtio_snd_log("event queue callback called\n");
++}
++
+ /*
+  * Initializes the VirtIOSound card device. Validates the configuration
+  * passed by the command line. Initializes the virtqueues. Allocates resources
+@@ -1124,6 +1136,7 @@ static void virtio_snd_device_realize(DeviceState *dev, Error **errp)
+     default_params.rate = VIRTIO_SND_PCM_RATE_44100;
+ 
+     s->ctrl_vq = virtio_add_queue(vdev, 64, virtio_snd_handle_ctrl);
++    s->event_vq = virtio_add_queue(vdev, 64, virtio_snd_handle_event);
+     s->tx_vq = virtio_add_queue(vdev, 64, virtio_snd_handle_xfer);
+     s->rx_vq = virtio_add_queue(vdev, 64, virtio_snd_handle_xfer);
+ 
+@@ -1192,6 +1205,7 @@ static void virtio_snd_device_unrealize(DeviceState *dev)
+     s->jacks = NULL;
+ 
+     virtio_delete_queue(s->ctrl_vq);
++    virtio_delete_queue(s->event_vq);
+     virtio_delete_queue(s->tx_vq);
+     virtio_delete_queue(s->rx_vq);
+ }
+-- 
+2.34.1
+

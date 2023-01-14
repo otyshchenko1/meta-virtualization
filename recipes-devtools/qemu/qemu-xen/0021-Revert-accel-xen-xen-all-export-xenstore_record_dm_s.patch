@@ -1,0 +1,52 @@
+From d0fbf595083d04fb6cf2df729a371c32956a7521 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Sun, 31 Jul 2022 17:25:54 +0300
+Subject: [PATCH 21/62] Revert "accel/xen/xen-all: export
+ xenstore_record_dm_state"
+
+This reverts commit 38aba8b39b136872e774263a5739cc23c54b427b.
+
+With the Xen accelerator enabled we don't need xenstore_record_dm_state()
+to be a global fucntion.
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ accel/xen/xen-all.c  | 2 +-
+ include/hw/xen/xen.h | 2 --
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/accel/xen/xen-all.c b/accel/xen/xen-all.c
+index 276625b78b..69aa7d018b 100644
+--- a/accel/xen/xen-all.c
++++ b/accel/xen/xen-all.c
+@@ -100,7 +100,7 @@ void xenstore_store_pv_console_info(int i, Chardev *chr)
+ }
+ 
+ 
+-void xenstore_record_dm_state(struct xs_handle *xs, const char *state)
++static void xenstore_record_dm_state(struct xs_handle *xs, const char *state)
+ {
+     char path[50];
+ 
+diff --git a/include/hw/xen/xen.h b/include/hw/xen/xen.h
+index f044184f59..0f9962b1c1 100644
+--- a/include/hw/xen/xen.h
++++ b/include/hw/xen/xen.h
+@@ -9,7 +9,6 @@
+  */
+ 
+ #include "exec/cpu-common.h"
+-#include <xenstore.h>
+ 
+ /* xen-machine.c */
+ enum xen_mode {
+@@ -32,6 +31,5 @@ qemu_irq *xen_interrupt_controller_init(void);
+ void xenstore_store_pv_console_info(int i, Chardev *chr);
+ 
+ void xen_register_framebuffer(struct MemoryRegion *mr);
+-void xenstore_record_dm_state(struct xs_handle *xs, const char *state);
+ 
+ #endif /* QEMU_HW_XEN_H */
+-- 
+2.34.1
+

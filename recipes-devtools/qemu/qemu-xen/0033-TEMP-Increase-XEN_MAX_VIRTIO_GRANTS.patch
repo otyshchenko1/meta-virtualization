@@ -1,0 +1,30 @@
+From f4705e4fe018cee85add5e374b7b485f1be17123 Mon Sep 17 00:00:00 2001
+From: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+Date: Mon, 26 Sep 2022 12:59:35 +0300
+Subject: [PATCH 33/62] [TEMP] Increase XEN_MAX_VIRTIO_GRANTS
+
+In order to pass FIO tests with temp file 512MB.
+My env is:
+bootargs: gnttab_max_frames=512
+domu.cfg: max_grant_frames=512
+
+Signed-off-by: Oleksandr Tyshchenko <oleksandr_tyshchenko@epam.com>
+---
+ include/hw/xen/xen_pvdev.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/hw/xen/xen_pvdev.h b/include/hw/xen/xen_pvdev.h
+index 36cd3ec1d4..451a2a39cc 100644
+--- a/include/hw/xen/xen_pvdev.h
++++ b/include/hw/xen/xen_pvdev.h
+@@ -79,6 +79,6 @@ void xen_pv_printf(struct XenLegacyDevice *xendev, int msg_level,
+                    const char *fmt, ...)  G_GNUC_PRINTF(3, 4);
+ 
+ #define XEN_GRANT_ADDR_OFF    0x8000000000000000ULL
+-#define XEN_MAX_VIRTIO_GRANTS 65536
++#define XEN_MAX_VIRTIO_GRANTS (65536*2)
+ 
+ #endif /* QEMU_HW_XEN_PVDEV_H */
+-- 
+2.34.1
+

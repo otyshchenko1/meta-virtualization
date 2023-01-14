@@ -1,0 +1,56 @@
+From 44847c91959d77ead77c62ad247f7824f51924f7 Mon Sep 17 00:00:00 2001
+From: Vladyslav Goncharuk <vladyslav_goncharuk@epam.com>
+Date: Tue, 20 Dec 2022 15:45:25 +0200
+Subject: [PATCH 58/62] virtio-snd: Add code to device unrealize function
+
+Signed-off-by: Shreyansh Chouhan <chouhan.shreyansh2702@gmail.com>
+---
+ hw/audio/virtio-snd.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/hw/audio/virtio-snd.c b/hw/audio/virtio-snd.c
+index cb83db0e89..7dd89c444b 100644
+--- a/hw/audio/virtio-snd.c
++++ b/hw/audio/virtio-snd.c
+@@ -1093,8 +1093,38 @@ static void virtio_snd_device_realize(DeviceState *dev, Error **errp)
+     }
+ }
+ 
++/*
++ * Frees the resources allocated to the device and then frees the device
++ * itself.
++ *
++ * @dev: VirtIOSound card device
++ */
+ static void virtio_snd_device_unrealize(DeviceState *dev)
+ {
++    VirtIOSound *s = VIRTIO_SOUND(dev);
++
++    for (int i = 0; i < s->snd_conf.streams; i++) {
++        virtio_snd_pcm_stream *st = virtio_snd_pcm_get_stream(s, i);
++        virtio_snd_pcm_release_impl(st, i);
++        g_free(s->pcm_params[i]);
++        s->pcm_params[i] = NULL;
++    }
++    g_free(s->streams);
++    s->streams = NULL;
++    g_free(s->pcm_params);
++    s->pcm_params = NULL;
++
++    for (int i = 0; i < s->snd_conf.jacks; i++) {
++        g_free(s->jacks[i]);
++        s->jacks[i] = NULL;
++    }
++    g_free(s->jacks);
++    s->jacks = NULL;
++
++    virtio_delete_queue(s->ctrl_vq);
++    virtio_delete_queue(s->tx_vq);
++    virtio_delete_queue(s->event_vq);
++    virtio_delete_queue(s->rx_vq);
+ }
+ 
+ static void virtio_snd_reset(VirtIODevice *vdev)
+-- 
+2.34.1
+
